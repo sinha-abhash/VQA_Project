@@ -162,7 +162,7 @@ if __name__ == '__main__':
     obj_fc_pair = def_model(obj_features.shape, obj_features_tensor, word_emb_net, obj_coord_tensor, obj_coord_pair.shape)
     img_model = img_model()
     attention_output = build_attention_model(word_emb_net, obj_fc_pair, count_features_pair_tensor, img_model)
-
+    '''
     y_ = tf.placeholder(dtype=tf.float32, shape=1000)
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(attention_output), y_)
     train_op = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss=loss)
@@ -173,7 +173,7 @@ if __name__ == '__main__':
         for i in range(125):
             obj_pair_features, obj_pair_coord, count_features_pair_list= get_pairs(i)
 
-
+    '''
 
     print(attention_output.get_shape().as_list())
 
