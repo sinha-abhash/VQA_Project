@@ -4,6 +4,7 @@ import operator as op
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from os.path import basename
+import random
 
 
 FEATURE_EMBEDDING_DIMENSION = 4096
@@ -132,7 +133,9 @@ def get_obj_pairwise(filenumber=0):
     #maxNoOfObjects = get_max_no_of_objects()
     maxNoOfObjects = 31
     count_features_pair_list = []
-    #print("max number of objects: %d" % (maxNoOfObjects))
+    obj_pair_dict = {}
+    ques_dict = {}
+    ans_dict = {}
 
     with open(path + str(filenumber) + '.json', 'r') as data_file:
         data = json.load(data_file)
@@ -149,12 +152,19 @@ def get_obj_pairwise(filenumber=0):
             question_list, answer_list = getQuestionsFromRaw(img)
 
             pair_obj, pair_coord, count_features_pair = get_pair(objects, num_objects, maxNoOfObjects)
-            #print("length of pair_obj: %d" %(len(pair_obj)))
-            #num_obj.append(len(pair_obj))
+
+            obj_pair_dict[img] = pair_obj
+            ques_dict[img] = question_list
+            ans_dict[img] = answer_list
+
             obj_pair_features.append(pair_obj)
             obj_pair_coord.append(pair_coord)
             count_features_pair_list.append(count_features_pair)
-            
+
+    print(len(obj_pair_features[0]))
+    ref_list = create_ref(obj_pair_dict, ques_dict)
+    obj_pair_list, que_list, ans_list = get_randomized_list(ref_list, obj_pair_dict, ques_dict, ans_dict)
+    print(len(obj_pair_list), len(que_list), len(ans_list))
 
     print("total number of images processed:%d" %(sum))
     #print(max(num_obj), min(num_obj))
@@ -193,4 +203,32 @@ def getQuestionsFromRaw(img):
                 answer_list.append(qa['ans'])
     return question_list, answer_list
 
-#get_obj_pairwise()
+
+# create the reference list of obj_pair, que and answers which will be used for shuffling
+def create_ref(obj_pair, que):
+    random.seed(999)
+    ref_list = []
+    for img in obj_pair.keys():
+        len_obj_pairs = len(obj_pair[img])
+        len_que = len(que[img])
+        for i in range(len_obj_pairs):
+            for j in range(len_que):
+                ref_list.append(img + " " + str(i) + " " + str(j) + " " + str(j))
+
+    return ref_list
+
+# shuffle the list and create the result list for obj_pairs, que and answer with the index obtained after shuffling the list
+def get_randomized_list(ref_list, obj_pair, que, ans):
+    random.shuffle(ref_list)
+    obj_pair_list, que_list, ans_list = [], [], []
+    for item in ref_list:
+        img, obj_pair_in, que_in, ans_in = item.split(" ")
+        obj_pair_in, que_in, ans_in = int(obj_pair_in), int(que_in), int(ans_in)
+        obj_pair_list.append(obj_pair[img][obj_pair_in])
+        que_list.append(que[img][int(que_in)])
+        ans_list.append(ans[img][int(ans_in)])
+
+    return obj_pair_list, que_list, ans_list
+
+
+get_obj_pairwise()
