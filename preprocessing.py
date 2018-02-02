@@ -136,6 +136,7 @@ def get_obj_pairwise(filenumber=0):
     obj_pair_dict = {}
     ques_dict = {}
     ans_dict = {}
+    coord_pair_dict = {}
 
     with open(path + str(filenumber) + '.json', 'r') as data_file:
         data = json.load(data_file)
@@ -154,6 +155,7 @@ def get_obj_pairwise(filenumber=0):
             pair_obj, pair_coord, count_features_pair = get_pair(objects, num_objects, maxNoOfObjects)
 
             obj_pair_dict[img] = pair_obj
+            coord_pair_dict[img] = pair_coord
             ques_dict[img] = question_list
             ans_dict[img] = answer_list
 
@@ -163,12 +165,14 @@ def get_obj_pairwise(filenumber=0):
 
     print(len(obj_pair_features[0]))
     ref_list = create_ref(obj_pair_dict, ques_dict)
-    obj_pair_list, que_list, ans_list = get_randomized_list(ref_list, obj_pair_dict, ques_dict, ans_dict)
-    print(len(obj_pair_list), len(que_list), len(ans_list))
+    obj_pair_list, coord_pair_list, que_list, ans_list = get_randomized_list(ref_list, obj_pair_dict, coord_pair_dict, ques_dict, ans_dict)
+    obj_pair_list, coord_pair_list, que_list, ans_list = np.array(obj_pair_list), np.array(coord_pair_list), np.array(que_list), np.array(ans_list)
+    print(obj_pair_list.shape, coord_pair_list.shape, que_list.shape, ans_list.shape)
 
     print("total number of images processed:%d" %(sum))
     #print(max(num_obj), min(num_obj))
     obj_pair_features, obj_pair_coord, count_features_pair_list = np.array(obj_pair_features), np.array(obj_pair_coord), np.array(count_features_pair_list)
+    print(obj_pair_features.shape)
     return obj_pair_features, obj_pair_coord, count_features_pair_list
 
 '''
@@ -218,17 +222,18 @@ def create_ref(obj_pair, que):
     return ref_list
 
 # shuffle the list and create the result list for obj_pairs, que and answer with the index obtained after shuffling the list
-def get_randomized_list(ref_list, obj_pair, que, ans):
+def get_randomized_list(ref_list, obj_pair, coord_pair, que, ans):
     random.shuffle(ref_list)
-    obj_pair_list, que_list, ans_list = [], [], []
+    obj_pair_list, coord_pair_list, que_list, ans_list = [], [], [], []
     for item in ref_list:
         img, obj_pair_in, que_in, ans_in = item.split(" ")
         obj_pair_in, que_in, ans_in = int(obj_pair_in), int(que_in), int(ans_in)
         obj_pair_list.append(obj_pair[img][obj_pair_in])
+        coord_pair_list.append(coord_pair[img][obj_pair_in])
         que_list.append(que[img][int(que_in)])
         ans_list.append(ans[img][int(ans_in)])
 
-    return obj_pair_list, que_list, ans_list
+    return obj_pair_list, coord_pair_list, que_list, ans_list
 
 
-get_obj_pairwise()
+#get_obj_pairwise()
