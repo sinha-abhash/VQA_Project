@@ -4,7 +4,6 @@ import tflearn
 
 from prepare_data import *
 from word_emb import word2vecmodel
-#from .AttentionGRUCell import AttentionGRUCell
 from VQA.AttentionGRUCell import AttentionGRUCell
 from cnn_model import *
 
@@ -94,6 +93,9 @@ def def_model(obj_shape, obj_features_tensor, word_emb_net, obj_coord_tensor, co
     # get dense representation of object features pairwise. the output will be of size 128
 
     obj_features = tf.split(obj_features_tensor, obj_shape[1]/2, axis=1)
+
+    obj_features = np.array(obj_features)
+    print(obj_features[0].shape)
     obj_coord = tf.split(obj_coord_tensor, coord_shape[1] / 2, axis=1)
     obj_fc_pair = []
     for feature_pair, coord_pair in zip(obj_features, obj_coord):
@@ -102,10 +104,7 @@ def def_model(obj_shape, obj_features_tensor, word_emb_net, obj_coord_tensor, co
 
         input_obj1 = tflearn.input_data(shape=[None, 2*4096])
         fc_obj1 = tflearn.fully_connected(input_obj1, 128, activation="tanh")
-        '''
-        fc_obj_word_1 = tflearn.merge([fc_obj1, word_emb_net], mode="concat")
-        fc_obj_word_2 = tflearn.fully_connected(fc_obj_word_1, 128, activation="tanh")
-        '''
+
         input_coord1 = tflearn.input_data(shape=[None, 2*4096])
         fc_coord1 = tflearn.fully_connected(input_coord1, 128, activation="tanh")
 
@@ -140,25 +139,26 @@ def get_embed_model(dropout_rate, model_weights_filename):
 
 
 if __name__ == '__main__':
-    obj_features, obj_coord_pair, count_features_pair_list = get_obj_pairwise()
+    obj_features, obj_coord_pair, que_list, ans_list, count_features_pair_list = get_obj_pairwise()
+    #obj_features, obj_coord_pair, count_features_pair_list = get_obj_pairwise()
 
-
+    '''
     obj_features = obj_features.reshape(obj_features.shape[0], obj_features.shape[1]*obj_features.shape[2], obj_features.shape[-1])
     obj_coord_pair = obj_coord_pair.reshape(obj_coord_pair.shape[0], obj_coord_pair.shape[1]*obj_coord_pair.shape[2], obj_coord_pair.shape[-1])
-
+    '''
     print(obj_features.shape, obj_coord_pair.shape, count_features_pair_list.shape)
     obj_features_tensor = tf.placeholder(tf.float32, shape=obj_features.shape)
+    obj_features_tensor = tf.reshape(obj_features_tensor, [-1, 2*4096])
+    print("shape of obj_features_tensor:" + str(obj_features_tensor.get_shape().as_list()))
     obj_coord_tensor = tf.placeholder(tf.float32, shape=obj_coord_pair.shape)
+    obj_coord_tensor = tf.reshape(obj_coord_tensor, [-1, 2*4])
+    print("shape of obj_coord_tensor: " + str(obj_coord_tensor.get_shape().as_list()))
     count_features_pair_tensor = tf.placeholder(tf.int32, shape=count_features_pair_list.shape)
     print(count_features_pair_tensor.get_shape().as_list())
 
     dropout_rate = 0.5
     word_emb_net = get_embed_model(dropout_rate, '')
-    #keras_autoencoder(train_x)
-    #test(train_x)
-    #obj_pair_model(train_x)
-    #tflearndensenetwork(train_x)
-    #obj_coord_pair = objcoordpair.get_obj_coordinates_pair()
+
     obj_fc_pair = def_model(obj_features.shape, obj_features_tensor, word_emb_net, obj_coord_tensor, obj_coord_pair.shape)
     img_model = img_model()
     attention_output = build_attention_model(word_emb_net, obj_fc_pair, count_features_pair_tensor, img_model)
@@ -171,28 +171,16 @@ if __name__ == '__main__':
         sess.run(tf.global_variables_initializer())
 
         for i in range(125):
-            obj_pair_features, obj_pair_coord, count_features_pair_list= get_pairs(i)
-
-    '''
+            obj_pair_features, obj_pair_coord, count_features_pair_list = get_pairs(i)
+            obj_features = obj_features.reshape(obj_features.shape[0], obj_features.shape[1] * obj_features.shape[2],
+                                                obj_features.shape[-1])
+            obj_coord_pair = obj_coord_pair.reshape(obj_coord_pair.shape[0],
+                                                    obj_coord_pair.shape[1] * obj_coord_pair.shape[2],
+                                                    obj_coord_pair.shape[-1])
 
     print(attention_output.get_shape().as_list())
 
-    '''
-    model = tflearn.DNN(model, checkpoint_path='model', tensorboard_dir='tensorboard/tflearn_logs/',
-                        best_checkpoint_path="checkpoints/", max_checkpoints=10, tensorboard_verbose=3,
-                        clip_gradients=0.)
-
     
-    model.fit([obj_features, obj_coord_pair], y,
-              n_epoch=3, validation_set=0.1,
-              snapshot_epoch=False, snapshot_step=400,
-              show_metric=True, batch_size=64, shuffle=True,
-              run_id='model_id')
-
-    '''
-
-
-    '''
     TODO
     for que_ans pairs, for every answers, prepare its hot encoding over 1000 (Answer) classes + 1 (for unknown question)
     in every image, there will be certain number of objects instance pairs. Every instance pair gets all the questions related to that image.

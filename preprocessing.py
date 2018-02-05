@@ -173,8 +173,8 @@ def get_obj_pairwise(filenumber=0):
     #print(max(num_obj), min(num_obj))
     obj_pair_features, obj_pair_coord, count_features_pair_list = np.array(obj_pair_features), np.array(obj_pair_coord), np.array(count_features_pair_list)
     print(obj_pair_features.shape)
-    return obj_pair_features, obj_pair_coord, count_features_pair_list
-
+    #return obj_pair_features, obj_pair_coord, count_features_pair_list
+    return obj_pair_list, coord_pair_list, que_list, ans_list, count_features_pair_list
 '''
 obj_pair, obj_pair_coord, count_features_pair = get_obj_pairwise()
 
