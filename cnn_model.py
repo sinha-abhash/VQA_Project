@@ -1,10 +1,7 @@
-from keras.applications.vgg16 import VGG16, preprocess_input
-from keras.preprocessing import image
-from keras.layers import Dense, Input, Flatten, GlobalAveragePooling2D
-from keras.models import Sequential, Model
-from PIL import Image
-import numpy as np
-import os
+import h5py
+import tensorflow as tf
+
+feature_path = 'data/features_vgg19_2.h5'
 
 '''
 def get_cnn_features_list():
@@ -26,18 +23,18 @@ np_features = np.array(features_list)
 print(np_features.shape)
 '''
 
+
+def read_features():
+    f = h5py.File(feature_path, 'r')
+    filenames = f['filenames']
+    for key, value in dict(f['vgg_19']).iteritems():
+        features = value
+
+
 def img_model():
-    base_model = VGG16(weights="imagenet", include_top=False, input_shape=(400,400, 3))
-    '''    
-    inputs = Input(shape=(400,400,3))
-    top_model = Sequential()
-    top_model.add(Flatten(input_shape=base_model.output_shape[1:]))
-    top_model.add(Dense(128))
-    '''
-    top_model = GlobalAveragePooling2D()(base_model.output)
-    top_model = Dense(128, activation='relu')(top_model)
+    img_feature = tf.placeholder(tf.float32, shape=[None, 4096])
+    img_fc = tf.layers.dense(img_feature, 128, activation = tf.nn.tanh())
+    return img_fc
 
-    model = Model(inputs=base_model.input, outputs=top_model)
-
-    print(model.summary())
-    return model.layers[-1].output
+if __name__ == '__main__':
+    read_features()
