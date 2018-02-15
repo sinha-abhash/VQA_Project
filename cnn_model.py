@@ -1,7 +1,12 @@
 import h5py
 import tensorflow as tf
+import os
 
 feature_path = 'data/features_vgg19_2.h5'
+f = h5py.File(feature_path, 'r')
+filenames = [os.path.basename(file_path) for file_path in f['filenames']]
+for key, value in dict(f['vgg_19']).iteritems():
+    features = value
 
 '''
 def get_cnn_features_list():
@@ -24,15 +29,15 @@ print(np_features.shape)
 '''
 
 
-def read_features():
-    f = h5py.File(feature_path, 'r')
-    filenames = f['filenames']
-    for key, value in dict(f['vgg_19']).iteritems():
-        features = value
+def read_features(img=None):
+    if img:
+        idx = filenames.index(img)
+        feature = features[idx]
+    return feature
 
 
 def img_model():
-    img_feature = tf.placeholder(tf.float32, shape=[None, 4096])
+    img_feature = tf.placeholder(tf.float32, shape=[None, 1, 1, 4096])
     img_fc = tf.layers.dense(img_feature, 128, activation = tf.nn.tanh())
     return img_fc
 
