@@ -5,20 +5,23 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from os.path import basename
 import random
-
+from cnn_model import read_features
 
 FEATURE_EMBEDDING_DIMENSION = 4096
-obj_pair_features, obj_pair_coord, count_features_pair_list = np.array([], dtype=np.float32), np.array([], dtype=np.float32), np.array([], dtype=np.int32)
+obj_pair_features, obj_pair_coord, count_features_pair_list = np.array([], dtype=np.float32), np.array([],
+                                                                                                       dtype=np.float32), np.array(
+    [], dtype=np.int32)
 
 with open("/home/surajit/Documents/Project/VQA_Project/VQA/data/vqa_raw_train.json", 'r') as raw_train:
     vqa_raw = json.load(raw_train)
 
+
 def ncr(n, r):
-    r = min(r, n-r)
+    r = min(r, n - r)
     if r == 0: return 1
-    numer = reduce(op.mul, xrange(n, n-r, -1))
-    denom = reduce(op.mul, xrange(1, r+1))
-    return numer//denom
+    numer = reduce(op.mul, xrange(n, n - r, -1))
+    denom = reduce(op.mul, xrange(1, r + 1))
+    return numer // denom
 
 
 def get_max_no_of_objects():
@@ -41,8 +44,9 @@ def get_max_no_of_objects():
     plt.ylabel("Number of occurrence")
     plt.xlabel("Number of instances")
     plt.show()
-    print("standard deviation: %d, mean: %d, max objects: %d" %(np.std(noOfInstances), np.mean(noOfInstances), np.amax(noOfInstances)))
-    print("Number of images: %d" %(len(more_10)))
+    print("standard deviation: %d, mean: %d, max objects: %d" % (
+    np.std(noOfInstances), np.mean(noOfInstances), np.amax(noOfInstances)))
+    print("Number of images: %d" % (len(more_10)))
     return max(noOfInstances)
 
 
@@ -50,11 +54,11 @@ def get_pair(objects, obj_count, maxNoOfObjects):
     objects_features = []
     coord_list_image = []
     for i in range(obj_count):
-       object = objects[i]
-       for features in object["feature_vectors"]:
-           objects_features.append(features['object_visual_embedding'])
-           coord_list_int = [int(s) for s in features['bounding_box'].split(',') if s.isdigit()]
-           coord_list_image.append(coord_list_int)
+        object = objects[i]
+        for features in object["feature_vectors"]:
+            objects_features.append(features['object_visual_embedding'])
+            coord_list_int = [int(s) for s in features['bounding_box'].split(',') if s.isdigit()]
+            coord_list_image.append(coord_list_int)
 
     '''
     if len(objects_features) < maxNoOfObjects:
@@ -66,17 +70,17 @@ def get_pair(objects, obj_count, maxNoOfObjects):
     '''
 
     obj_pair_result, coord_pair_result = [], []
-    pad_zeros_features, pad_zeros_coord = [0] * FEATURE_EMBEDDING_DIMENSION, [0,0,0,0]
+    pad_zeros_features, pad_zeros_coord = [0] * FEATURE_EMBEDDING_DIMENSION, [0, 0, 0, 0]
     if len(objects_features) == 1:
         objects_features.append(pad_zeros_features)
         coord_list_image.append(pad_zeros_coord)
-    #print("length of objects_features: %d, length of coord_pair: %d" % (len(objects_features), len(coord_list_image)))
+    # print("length of objects_features: %d, length of coord_pair: %d" % (len(objects_features), len(coord_list_image)))
 
     for i in range(len(objects_features)):
         for j in range(len(objects_features)):
 
-            if i != j and (([objects_features[i],objects_features[j]] not in obj_pair_result)
-                           and ([objects_features[j],objects_features[i]] not in obj_pair_result)):
+            if i != j and (([objects_features[i], objects_features[j]] not in obj_pair_result)
+                           and ([objects_features[j], objects_features[i]] not in obj_pair_result)):
                 obj_pair, coord_pair = [], []
                 obj_pair.append(objects_features[i])
                 obj_pair.append(objects_features[j])
@@ -87,13 +91,14 @@ def get_pair(objects, obj_count, maxNoOfObjects):
                 coord_pair_result.append(coord_pair)
 
     count_features_pair = len(obj_pair_result)
-    #print("length of obj_pair_result: %d and length of coord_pair_result: %d, count: %d" %(len(obj_pair_result), len(coord_pair_result), count_features_pair))
+    # print("length of obj_pair_result: %d and length of coord_pair_result: %d, count: %d" %(len(obj_pair_result), len(coord_pair_result), count_features_pair))
     # if number of instances is less than max number of instances then pad remaining instances with zeros
+
     if len(objects_features) < maxNoOfObjects:
         if len(objects_features) == 0:
-            padding_range = ncr(maxNoOfObjects,2)
+            padding_range = ncr(maxNoOfObjects, 2)
         else:
-            padding_range = ncr(maxNoOfObjects,2) - ncr(len(objects_features),2)
+            padding_range = ncr(maxNoOfObjects, 2) - ncr(len(objects_features), 2)
 
         pad_zeros_features_pair, pad_zeros_coord_pair = [], []
 
@@ -107,22 +112,20 @@ def get_pair(objects, obj_count, maxNoOfObjects):
             obj_pair_result.append(pad_zeros_features_pair)
             coord_pair_result.append(pad_zeros_coord_pair)
 
-    result_np = np.asarray(obj_pair_result)
-    result_coord_np = np.array(coord_pair_result)
-    #print(result_np.shape, result_coord_np.shape)
     return obj_pair_result, coord_pair_result, count_features_pair
 
 
 def max_obj_count(path):
-	result = []
-	for i in range(125):
-		with open(path + str(i) + '.json', 'r') as data_file:
-			data = json.load(data_file)
-			for j in range(len(data)):
-				val = data[j][data[j].keys()[0]]
-				num_obj = val['num_objects']
-				result.append(num_obj)
-	return max(result)
+    result = []
+    for i in range(125):
+        with open(path + str(i) + '.json', 'r') as data_file:
+            data = json.load(data_file)
+            for j in range(len(data)):
+                val = data[j][data[j].keys()[0]]
+                num_obj = val['num_objects']
+                result.append(num_obj)
+    return max(result)
+
 
 def get_obj_pairwise(filenumber=0):
     obj_pair_features, obj_pair_coord = [], []
@@ -130,7 +133,7 @@ def get_obj_pairwise(filenumber=0):
     path = "/home/surajit/json_dump/"
     max_num_obj = max_obj_count(path)
     coord_list = []
-    #maxNoOfObjects = get_max_no_of_objects()
+    # maxNoOfObjects = get_max_no_of_objects()
     maxNoOfObjects = 31
     count_features_pair_list = []
     obj_pair_dict = {}
@@ -141,14 +144,13 @@ def get_obj_pairwise(filenumber=0):
     with open(path + str(filenumber) + '.json', 'r') as data_file:
         data = json.load(data_file)
 
-
-        #print("length of data: %d" %(len(data)))
+        # print("length of data: %d" %(len(data)))
         sum += len(data)
         for j in range(len(data)):
             img = basename(data[j].keys()[0])
             val = data[j][data[j].keys()[0]]
             num_objects = val["num_objects"]
-            objects =  val["objects"]
+            objects = val["objects"]
 
             question_list, answer_list = getQuestionsFromRaw(img)
 
@@ -165,34 +167,28 @@ def get_obj_pairwise(filenumber=0):
 
     print(len(obj_pair_features[0]))
     ref_list = create_ref(obj_pair_dict, ques_dict)
-    obj_pair_list, coord_pair_list, que_list, ans_list = get_randomized_list(ref_list, obj_pair_dict, coord_pair_dict, ques_dict, ans_dict)
-    obj_pair_list, coord_pair_list, que_list, ans_list = np.array(obj_pair_list), np.array(coord_pair_list), np.array(que_list), np.array(ans_list)
-    print(obj_pair_list.shape, coord_pair_list.shape, que_list.shape, ans_list.shape)
+    obj_pair_list, coord_pair_list, que_list, ans_list, feature_vectors = get_randomized_list(ref_list, obj_pair_dict,
+                                                                                              coord_pair_dict,
+                                                                                              ques_dict, ans_dict)
+    obj_pair_list, coord_pair_list, que_list, ans_list, feature_vectors = np.array(obj_pair_list), np.array(
+        coord_pair_list), np.array(que_list), np.array(ans_list), np.array(feature_vectors)
+    feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], feature_vectors.shape[-1])
+    print(obj_pair_list.shape, coord_pair_list.shape, que_list.shape, ans_list.shape, feature_vectors.shape)
 
-    print("total number of images processed:%d" %(sum))
-    #print(max(num_obj), min(num_obj))
-    obj_pair_features, obj_pair_coord, count_features_pair_list = np.array(obj_pair_features), np.array(obj_pair_coord), np.array(count_features_pair_list)
+    print("total number of images processed:%d" % (sum))
+    # print(max(num_obj), min(num_obj))
+    obj_pair_features, obj_pair_coord, count_features_pair_list = np.array(obj_pair_features), np.array(
+        obj_pair_coord), np.array(count_features_pair_list)
     print(obj_pair_features.shape)
-    #return obj_pair_features, obj_pair_coord, count_features_pair_list
-    return obj_pair_list, coord_pair_list, que_list, ans_list, count_features_pair_list
-'''
-obj_pair, obj_pair_coord, count_features_pair = get_obj_pairwise()
-
-np_obj_pair_1 = np.array(obj_pair[:(len(obj_pair)/4)])
-np_obj_pair_2 = np.array(obj_pair[(len(obj_pair)/4):len(obj_pair)/2])
-np_obj_pair_3 = np.array(obj_pair[len(obj_pair)/2:3*len(obj_pair)/4])
-np_obj_pair_4 = np.array(obj_pair[3*len(obj_pair)/4:])
-np_obj_pair = np.asarray(obj_pair)
-print(np_obj_pair.shape, len(count_features_pair))
-#print(np_obj_pair_2.shape)
-'''
+    # return obj_pair_features, obj_pair_coord, count_features_pair_list
+    return obj_pair_list, coord_pair_list, que_list, ans_list, count_features_pair_list, feature_vectors
 
 
 def get_pairs(filenumber):
     if filenumber != 0:
         print("get_pairs")
-        obj_pair_features, obj_pair_coord, count_features_pair_list = get_obj_pairwise(filenumber)
-    return obj_pair_features, obj_pair_coord, count_features_pair_list
+        obj_pair_features, obj_pair_coord, count_features_pair_list, feature_vectors = get_obj_pairwise(filenumber)
+    return obj_pair_features, obj_pair_coord, count_features_pair_list, feature_vectors
 
 
 def getQuestionsFromRaw(img):
@@ -221,10 +217,11 @@ def create_ref(obj_pair, que):
 
     return ref_list
 
+
 # shuffle the list and create the result list for obj_pairs, que and answer with the index obtained after shuffling the list
 def get_randomized_list(ref_list, obj_pair, coord_pair, que, ans):
     random.shuffle(ref_list)
-    obj_pair_list, coord_pair_list, que_list, ans_list = [], [], [], []
+    obj_pair_list, coord_pair_list, que_list, ans_list, feature_vectors = [], [], [], [], []
     for item in ref_list:
         img, obj_pair_in, que_in, ans_in = item.split(" ")
         obj_pair_in, que_in, ans_in = int(obj_pair_in), int(que_in), int(ans_in)
@@ -232,8 +229,21 @@ def get_randomized_list(ref_list, obj_pair, coord_pair, que, ans):
         coord_pair_list.append(coord_pair[img][obj_pair_in])
         que_list.append(que[img][int(que_in)])
         ans_list.append(ans[img][int(ans_in)])
+        feature_vectors.append(read_features(img))
 
-    return obj_pair_list, coord_pair_list, que_list, ans_list
+    return obj_pair_list, coord_pair_list, que_list, ans_list, feature_vectors
 
 
-#get_obj_pairwise()
+if __name__ == '__main__':
+    get_obj_pairwise()
+    '''
+    obj_pair, obj_pair_coord, count_features_pair = get_obj_pairwise()
+
+    np_obj_pair_1 = np.array(obj_pair[:(len(obj_pair)/4)])
+    np_obj_pair_2 = np.array(obj_pair[(len(obj_pair)/4):len(obj_pair)/2])
+    np_obj_pair_3 = np.array(obj_pair[len(obj_pair)/2:3*len(obj_pair)/4])
+    np_obj_pair_4 = np.array(obj_pair[3*len(obj_pair)/4:])
+    np_obj_pair = np.asarray(obj_pair)
+    print(np_obj_pair.shape, len(count_features_pair))
+    #print(np_obj_pair_2.shape)
+    '''

@@ -36,9 +36,10 @@ def read_features(img=None):
     return feature
 
 
-def img_model():
-    img_feature = tf.placeholder(tf.float32, shape=[None, 1, 1, 4096])
-    img_fc = tf.layers.dense(img_feature, 128, activation = tf.nn.tanh())
+
+def img_model(img_feature):
+
+    img_fc = tf.layers.dense(img_feature, 128, activation = tf.nn.tanh)
     return img_fc
 
 if __name__ == '__main__':

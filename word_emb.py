@@ -2,12 +2,12 @@ import tflearn
 import tensorflow as tf
 
 
-def word2vecmodel(embedding_matrix, num_words, embedding_dim, seq_length, dropout_rate, num_classes):
+def word2vecmodel(embedding_matrix, num_words, embedding_dim, seq_length, dropout_rate, num_classes, word_input):
     print "Creating word2vec model..."
     
     embedding_m = tf.constant_initializer(embedding_matrix)
     #net = tflearn.input_data(shape=[seq_length, 300])
-    word_input = tf.placeholder(dtype=tf.float32, shape=[None, 300])
+
     net = tflearn.input_data(placeholder=word_input)
 
     # create embedding weights, set trainable to False, so weights are not updated
