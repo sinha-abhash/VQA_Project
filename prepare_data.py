@@ -42,7 +42,7 @@ def get_metadata():
     meta_data['ix_to_word'] = {str(word):int(i) for i,word in meta_data['ix_to_word'].items()}
     return meta_data
 
-def prepare_embeddings(num_words, embedding_dim, metadata):
+def prepare_embeddings(num_words, embedding_dim, word_index):
     if os.path.exists(embedding_matrix_filename):
         with h5py.File(embedding_matrix_filename) as f:
             return np.array(f['embedding_matrix'])
@@ -58,7 +58,6 @@ def prepare_embeddings(num_words, embedding_dim, metadata):
             embeddings_index[word] = coefs
 
     embedding_matrix = np.zeros((num_words, embedding_dim))
-    word_index = metadata['ix_to_word']
 
     for word, i in word_index.items():
         embedding_vector = embeddings_index.get(word)

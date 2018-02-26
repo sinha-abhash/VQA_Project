@@ -6,6 +6,8 @@ from tqdm import tqdm
 from os.path import basename
 import random
 from cnn_model import read_features
+import time
+from prepro import one_hot_encoded, encode_question as get_encoded_question, imgs_train
 
 FEATURE_EMBEDDING_DIMENSION = 4096
 obj_pair_features, obj_pair_coord, count_features_pair_list = np.array([], dtype=np.float32), np.array([],
@@ -54,12 +56,15 @@ def get_pair(objects, obj_count, maxNoOfObjects):
     objects_features = []
     coord_list_image = []
     for i in range(obj_count):
-        object = objects[i]
-        for features in object["feature_vectors"]:
+        object_features = objects[i]
+        for features in object_features["feature_vectors"]:
             objects_features.append(features['object_visual_embedding'])
             coord_list_int = [int(s) for s in features['bounding_box'].split(',') if s.isdigit()]
             coord_list_image.append(coord_list_int)
 
+    if len(objects_features) > maxNoOfObjects:
+        del objects_features[13:]
+        del coord_list_image[13:]
     '''
     if len(objects_features) < maxNoOfObjects:
         diff = maxNoOfObjects - len(objects_features)
@@ -134,26 +139,23 @@ def get_obj_pairwise(filenumber=0):
     max_num_obj = max_obj_count(path)
     coord_list = []
     # maxNoOfObjects = get_max_no_of_objects()
-    maxNoOfObjects = 31
+    maxNoOfObjects = 13
     count_features_pair_list = []
     obj_pair_dict = {}
     ques_dict = {}
     ans_dict = {}
     coord_pair_dict = {}
-
     with open(path + str(filenumber) + '.json', 'r') as data_file:
         data = json.load(data_file)
-
         # print("length of data: %d" %(len(data)))
         sum += len(data)
-        for j in range(len(data)):
+        for j in tqdm(range(len(data))):
             img = basename(data[j].keys()[0])
             val = data[j][data[j].keys()[0]]
             num_objects = val["num_objects"]
             objects = val["objects"]
 
             question_list, answer_list = getQuestionsFromRaw(img)
-
             pair_obj, pair_coord, count_features_pair = get_pair(objects, num_objects, maxNoOfObjects)
 
             obj_pair_dict[img] = pair_obj
@@ -165,7 +167,6 @@ def get_obj_pairwise(filenumber=0):
             obj_pair_coord.append(pair_coord)
             count_features_pair_list.append(count_features_pair)
 
-    print(len(obj_pair_features[0]))
     ref_list = create_ref(obj_pair_dict, ques_dict)
     obj_pair_list, coord_pair_list, que_list, ans_list, feature_vectors = get_randomized_list(ref_list, obj_pair_dict,
                                                                                               coord_pair_dict,
@@ -177,30 +178,35 @@ def get_obj_pairwise(filenumber=0):
 
     print("total number of images processed:%d" % (sum))
     # print(max(num_obj), min(num_obj))
+    #obj_pair_features, obj_pair_coord, count_features_pair_list = np.array(obj_pair_features), np.array(
+    #    obj_pair_coord), np.array(count_features_pair_list)
+
     obj_pair_features, obj_pair_coord, count_features_pair_list = np.array(obj_pair_features), np.array(
-        obj_pair_coord), np.array(count_features_pair_list)
+        obj_pair_coord), np.ones(1)
+
     print(obj_pair_features.shape)
     # return obj_pair_features, obj_pair_coord, count_features_pair_list
     return obj_pair_list, coord_pair_list, que_list, ans_list, count_features_pair_list, feature_vectors
 
 
 def get_pairs(filenumber):
-    if filenumber != 0:
-        print("get_pairs")
-        obj_pair_features, obj_pair_coord, count_features_pair_list, feature_vectors = get_obj_pairwise(filenumber)
-    return obj_pair_features, obj_pair_coord, count_features_pair_list, feature_vectors
+
+    print("get_pairs for %d" %(filenumber))
+    obj_pair_list, coord_pair_list, que_list, ans_list, count_features_pair_list, feature_vectors = get_obj_pairwise(filenumber)
+    return obj_pair_list, coord_pair_list, que_list, ans_list, count_features_pair_list, feature_vectors
 
 
 def getQuestionsFromRaw(img):
     question_list = []
     answer_list = []
-    for qa in vqa_raw:
+    for qa in imgs_train:
         img_qa = basename(qa['img_path'])
         if img == img_qa:
-            if qa['question']:
-                question_list.append(qa['question'])
+            if qa['final_question']:
+                question_list.append(qa['final_question'])
             if qa['ans']:
                 answer_list.append(qa['ans'])
+            imgs_train.remove(qa)
     return question_list, answer_list
 
 
@@ -227,15 +233,25 @@ def get_randomized_list(ref_list, obj_pair, coord_pair, que, ans):
         obj_pair_in, que_in, ans_in = int(obj_pair_in), int(que_in), int(ans_in)
         obj_pair_list.append(obj_pair[img][obj_pair_in])
         coord_pair_list.append(coord_pair[img][obj_pair_in])
-        que_list.append(que[img][int(que_in)])
-        ans_list.append(ans[img][int(ans_in)])
+
+        question = que[img][int(que_in)]
+        que_list.append(get_encoded_question(question))
+        answer = ans[img][int(ans_in)]
+        ans_list.append(one_hot_encoded(answer))
         feature_vectors.append(read_features(img))
 
     return obj_pair_list, coord_pair_list, que_list, ans_list, feature_vectors
 
 
 if __name__ == '__main__':
-    get_obj_pairwise()
+    len_features = []
+    start = time.time()
+    for i in tqdm(range(1, 125)):
+        obj_pair_features, obj_pair_coord, count_features_pair_list, feature_vectors = get_pairs(i)
+        print("in main: %d" %(len(obj_pair_features[0])))
+
+    end = time.time()
+    print("total time taken: %f" %(end-start))
     '''
     obj_pair, obj_pair_coord, count_features_pair = get_obj_pairwise()
 
